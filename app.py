@@ -1,6 +1,5 @@
 import streamlit as st
 import requests
-import pandas as pd
 import random
 
 # --- CONFIGURATION & DESIGN ---
@@ -11,32 +10,30 @@ st.markdown("""
     .stApp { background-color: #091428; color: #F0E6D2; }
     h1, h2, h3, h4 { color: #C89B3C !important; font-family: 'Trebuchet MS', sans-serif; text-transform: uppercase; letter-spacing: 1px; }
     
-    /* FORCER LA LISIBILITÉ DES TEXTES ET DES STATS */
+    /* SUPPRESSION DES BANDES BLANCHES ET STYLISATION DES INPUTS */
+    div[data-baseweb="select"] > div { background-color: #0A1428 !important; border-color: #3273FA !important; color: #FFFFFF !important; }
+    div[data-baseweb="popover"] > div { background-color: #0A1428 !important; color: #FFFFFF !important; border: 1px solid #3273FA !important; }
+    ul[role="listbox"] li { color: #FFFFFF !important; }
+    
+    /* STATS ET CARTES */
     p, li, span, div { color: #F0E6D2; }
-    div[data-testid="metric-container"] {
-        background-color: #0A1428;
-        border: 1px solid #C89B3C;
-        padding: 15px;
-        border-radius: 4px;
-        box-shadow: 0 0 10px rgba(200, 155, 60, 0.2);
-    }
+    div[data-testid="metric-container"] { background-color: #0A1428; border: 1px solid #C89B3C; padding: 15px; border-radius: 4px; box-shadow: 0 0 10px rgba(200, 155, 60, 0.2); }
     [data-testid="stMetricValue"] { color: #FFFFFF !important; font-size: 26px !important; font-weight: 900 !important; }
     [data-testid="stMetricLabel"] { color: #C89B3C !important; font-size: 14px !important; font-weight: bold !important; text-transform: uppercase; }
     
-    .stSelectbox label { color: #C89B3C !important; font-weight: bold; }
-    hr { border-color: #C89B3C; opacity: 0.3; }
     .vs-text { text-align: center; font-size: 40px; color: #C89B3C; font-weight: 900; font-style: italic; margin-top: 50px; }
-    .advice-box { background-color: #0A1428; border-left: 4px solid #0AC8B9; padding: 20px; margin-top: 20px; }
+    .advice-box { background-color: #0A1428; border-left: 4px solid #0AC8B9; padding: 20px; margin-top: 20px; border-radius: 4px; }
     .champ-card { background-color: #0A1428; border: 1px solid #3273FA; padding: 15px; border-radius: 5px; text-align: center; }
+    .item-box { display: flex; align-items: center; background-color: #050A14; padding: 10px; border: 1px solid #C89B3C; border-radius: 5px; margin-bottom: 10px;}
+    .item-box img { width: 40px; height: 40px; border-radius: 5px; margin-right: 15px; border: 1px solid #3273FA; }
     .item-highlight { color: #0AC8B9; font-weight: bold; }
-    .warning-text { color: #FF4B4B; font-weight: bold; }
     </style>
     """, unsafe_allow_html=True)
 
-# --- LISTES META (Pour éviter le Galio Jungle) ---
+# --- LISTES META STRICTES ---
 META_ROLES = {
-    "Toplane": ["Aatrox", "Camille", "Cho'Gath", "Darius", "Dr. Mundo", "Fiora", "Garen", "Gnar", "Gragas", "Gwen", "Illaoi", "Irelia", "Jax", "Jayce", "K'Sante", "Kayle", "Kennen", "Kled", "Malphite", "Maokai", "Mordekaiser", "Nasus", "Olaf", "Ornn", "Pantheon", "Poppy", "Quinn", "Renekton", "Riven", "Rumble", "Sett", "Shen", "Singed", "Sion", "Tahm Kench", "Teemo", "Trundle", "Tryndamere", "Urgot", "Vayne", "Volibear", "Wukong", "Yasuo", "Yone", "Yorick", "Zac"],
-    "Jungle": ["Amumu", "Bel'Veth", "Briar", "Diana", "Ekko", "Elise", "Evelynn", "Fiddlesticks", "Gragas", "Graves", "Hecarim", "Ivern", "Jarvan IV", "Karthus", "Kayn", "Kha'Zix", "Kindred", "Lee Sin", "Lillia", "Master Yi", "Nidalee", "Nocturne", "Nunu & Willump", "Pantheon", "Poppy", "Rammus", "Rengar", "Sejuani", "Shaco", "Shyvana", "Skarner", "Taliyah", "Talon", "Trundle", "Udyr", "Vi", "Viego", "Volibear", "Warwick", "Wukong", "Xin Zhao", "Zac", "Zed"],
+    "Toplane": ["Aatrox", "Camille", "Cho'Gath", "Darius", "Dr. Mundo", "Fiora", "Garen", "Gnar", "Gragas", "Gwen", "Illaoi", "Irelia", "Jax", "Jayce", "K'Sante", "Kayle", "Kennen", "Kled", "Malphite", "Maokai", "Mordekaiser", "Nasus", "Olaf", "Ornn", "Pantheon", "Poppy", "Quinn", "Renekton", "Riven", "Rumble", "Sett", "Shen", "Singed", "Sion", "Tahm Kench", "Teemo", "Trundle", "Tryndamere", "Urgot", "Vayne", "Volibear", "Wukong", "Yasuo", "Yone", "Yorick"],
+    "Jungle": ["Amumu", "Bel'Veth", "Briar", "Diana", "Ekko", "Elise", "Evelynn", "Fiddlesticks", "Gragas", "Graves", "Hecarim", "Ivern", "Jarvan IV", "Karthus", "Kayn", "Kha'Zix", "Kindred", "Lee Sin", "Lillia", "Master Yi", "Nidalee", "Nocturne", "Nunu & Willump", "Poppy", "Rammus", "Rengar", "Sejuani", "Shaco", "Shyvana", "Skarner", "Taliyah", "Talon", "Trundle", "Udyr", "Vi", "Viego", "Volibear", "Warwick", "Wukong", "Xin Zhao", "Zac"],
     "Midlane": ["Ahri", "Akali", "Akshan", "Anivia", "Annie", "Aurelion Sol", "Azir", "Cassiopeia", "Corki", "Diana", "Ekko", "Fizz", "Galio", "Hwei", "Irelia", "Kassadin", "Katarina", "LeBlanc", "Lissandra", "Lux", "Malzahar", "Naafiri", "Neeko", "Orianna", "Qiyana", "Ryze", "Smolder", "Sylas", "Syndra", "Talon", "Twisted Fate", "Veigar", "Vex", "Viktor", "Vladimir", "Xerath", "Yasuo", "Yone", "Zed", "Ziggs", "Zoe"],
     "Botlane (ADC)": ["Aphelios", "Ashe", "Caitlyn", "Draven", "Ezreal", "Jhin", "Jinx", "Kai'Sa", "Kalista", "Kog'Maw", "Lucian", "Miss Fortune", "Nilah", "Samira", "Sivir", "Smolder", "Tristana", "Twitch", "Varus", "Vayne", "Xayah", "Yasuo", "Zeri", "Ziggs"],
     "Support": ["Alistar", "Ashe", "Bard", "Blitzcrank", "Brand", "Braum", "Heimerdinger", "Janna", "Karma", "Leona", "Lulu", "Lux", "Maokai", "Milio", "Morgana", "Nami", "Nautilus", "Pantheon", "Pyke", "Rakan", "Rell", "Renata Glasc", "Senna", "Seraphine", "Sona", "Soraka", "Swain", "Tahm Kench", "Taric", "Thresh", "Vel'Koz", "Xerath", "Yuumi", "Zilean", "Zyra"]
@@ -47,117 +44,134 @@ META_ROLES = {
 def get_lol_data():
     try:
         version = requests.get("https://ddragon.leagueoflegends.com/api/versions.json").json()[0]
-        champs_data = requests.get(f"https://ddragon.leagueoflegends.com/cdn/{version}/data/fr_FR/champion.json").json()['data']
+        
+        # Data Champions
+        champs_url = f"https://ddragon.leagueoflegends.com/cdn/{version}/data/fr_FR/champion.json"
+        champs_data = requests.get(champs_url).json()['data']
         
         champions = {}
         for champ_id, info in champs_data.items():
-            nom = info['name']
-            champions[nom] = {
-                'id': champ_id,
-                'title': info['title'],
-                'tags': info['tags'],
+            champions[info['name']] = {
+                'id': champ_id, 'title': info['title'], 'tags': info['tags'],
                 'image_url': f"https://ddragon.leagueoflegends.com/cdn/{version}/img/champion/{info['image']['full']}"
             }
-        return champions
+            
+        # Data Objets (Items)
+        items_url = f"https://ddragon.leagueoflegends.com/cdn/{version}/data/fr_FR/item.json"
+        items_data = requests.get(items_url).json()['data']
+        
+        items = {}
+        for item_id, info in items_data.items():
+            items[info['name']] = f"https://ddragon.leagueoflegends.com/cdn/{version}/img/item/{item_id}.png"
+            
+        return champions, items, version
     except:
-        return None
+        return None, None, None
 
-# --- MOTEUR DE DRAFT (SYNERGIE & COMPOSITION) ---
+def get_item_image(item_name, items_dict):
+    """Recherche l'URL de l'image de l'objet de manière souple"""
+    for nom_exact, url in items_dict.items():
+        if item_name.lower() in nom_exact.lower():
+            return url
+    return "https://ddragon.leagueoflegends.com/cdn/14.5.1/img/item/3340.png" # Ward par défaut si introuvable
+
+# --- LOGIQUE D'ANALYSE MATCHUP ---
+def generer_conseils_lane(mon_champ, son_champ, lane):
+    conseils = []
+    if lane == "Jungle":
+        conseils = [
+            f"**Pathing :** Observe de quel côté {son_champ} commence pour anticipe s'il va gank ou farm.",
+            f"**Objectifs :** Sécurise la vision sur les Larves du Néant ou le Dragon avant que {son_champ} ne s'y installe.",
+            f"**Invade :** Si {mon_champ} a un meilleur 1v1 en début de partie, n'hésite pas à le chercher dans sa jungle.",
+            "Contrôle le Carapateur pour garantir la vision à tes laners."
+        ]
+    else:
+        conseils = [
+            f"**Gestion de Wave :** Ne push pas bêtement. Garde la wave proche de ta tour si le jungler ennemi est agressif.",
+            f"**Trading :** Joue autour des délais de récupération (cooldowns) des sorts principaux de {son_champ}.",
+            f"**Priorité :** Essaie d'avoir la priorité de lane (push) quand ton jungler fait le carapateur ou un objectif.",
+            "Attention au passage niveau 2, c'est le moment clé pour prendre l'avantage ou mourir."
+        ]
+    return random.sample(conseils, 3)
+
+# --- LOGIQUE DE DRAFT ---
 def analyser_compo(equipe_alliee, ma_lane, champions_data):
-    tags_equipe = []
-    for champ in equipe_alliee:
-        if champ != "Aucun" and champ in champions_data:
-            tags_equipe.extend(champions_data[champ]['tags'])
-    
+    tags_equipe = [tag for champ in equipe_alliee if champ in champions_data for tag in champions_data[champ]['tags']]
     manque_ap = "Mage" not in tags_equipe
     manque_tank = "Tank" not in tags_equipe
     
     suggestions = []
-    # On ne fouille QUE dans les champions qui sont viables dans la lane choisie
     champions_viables = META_ROLES.get(ma_lane, [])
     
     for nom in champions_viables:
-        if nom not in champions_data or nom in equipe_alliee: 
-            continue
-            
+        if nom not in champions_data or nom in equipe_alliee: continue
         score = 1
         tags_champ = champions_data[nom]['tags']
-        
         if manque_ap and "Mage" in tags_champ: score += 3
         if manque_tank and ("Tank" in tags_champ or "Fighter" in tags_champ): score += 3
-        
         suggestions.append({"nom": nom, "score": score, "image": champions_data[nom]['image_url'], "tags": tags_champ})
                 
-    suggestions = sorted(suggestions, key=lambda x: x['score'], reverse=True)[:3]
-    return manque_ap, manque_tank, suggestions
+    return manque_ap, manque_tank, sorted(suggestions, key=lambda x: x['score'], reverse=True)[:3]
 
-# --- MOTEUR DE STUFF (BUILD DYNAMIQUE) ---
-def generer_build(mon_champ, equipe_ennemie, champions_data):
-    if mon_champ == "Aucun" or mon_champ not in champions_data:
-        return None
-        
-    tags_ennemis = []
-    for champ in equipe_ennemie:
-        if champ != "Aucun" and champ in champions_data:
-            tags_ennemis.extend(champions_data[champ]['tags'])
-            
+# --- LOGIQUE DE BUILD COMPLET ---
+def generer_build_complet(mon_champ, e_team, champions_data, items_data):
+    tags_ennemis = [tag for champ in e_team if champ in champions_data for tag in champions_data[champ]['tags']]
     nb_tanks = tags_ennemis.count("Tank") + tags_ennemis.count("Fighter")
     nb_assassins = tags_ennemis.count("Assassin")
     nb_mages = tags_ennemis.count("Mage")
-    nb_supports = tags_ennemis.count("Support") # Souvent des healers
+    nb_supports = tags_ennemis.count("Support")
     
-    mon_tag_principal = champions_data[mon_champ]['tags'][0]
+    mon_tag = champions_data[mon_champ]['tags'][0]
     
-    conseils = []
+    # CORE BUILD
+    core_items = []
+    if mon_tag == "Mage": core_items = ["Compagnon de Luden", "Flamme-ombre", "Coiffe de Rabadon"]
+    elif mon_tag == "Assassin": core_items = ["Lame spectre de Youmuu", "Opportunité", "Manteau de la nuit"]
+    elif mon_tag == "Marksman": core_items = ["Tueur de krakens", "Lame d'infini", "Salutations de Lord Dominik"]
+    elif mon_tag == "Tank": core_items = ["Égide solaire", "Jak'Sho, le Protéiforme", "Cœur gelé"]
+    elif mon_tag == "Fighter": core_items = ["Ciel éventré", "Gage de Sterak", "Force de la trinité"]
+    else: core_items = ["Éclat de glace pure", "Rédemption", "Mikael"]
     
-    # 1. Anti-Heal
+    html_core = "<div style='display: flex; gap: 15px; margin-bottom: 20px;'>"
+    for item in core_items:
+        img = get_item_image(item, items_data)
+        html_core += f"<div><img src='{img}' width='50' style='border: 1px solid #C89B3C; border-radius: 5px;'><br><span style='font-size: 12px;'>{item}</span></div>"
+    html_core += "</div>"
+    
+    # SITUATIONAL ITEMS
+    adaptations = []
     if nb_supports >= 1 or "Fighter" in tags_ennemis:
-        if mon_tag_principal == "Mage" or mon_tag_principal == "Support":
-            conseils.append("🩸 **L'équipe ennemie a du soin :** Fais un <span class='item-highlight'>Morellonomicon</span> ou un <span class='item-highlight'>Putrificateur Techno-chimique</span>.")
-        elif mon_tag_principal in ["Marksman", "Fighter", "Assassin"]:
-            conseils.append("🩸 **L'équipe ennemie a du soin :** Achète un <span class='item-highlight'>Rappel Mortel</span> ou une <span class='item-highlight'>Épée Dentelée Chempunk</span>.")
-        elif mon_tag_principal == "Tank":
-            conseils.append("🩸 **L'équipe ennemie a du soin :** Prends une <span class='item-highlight'>Cotte Épineuse</span> dès que possible.")
+        if mon_tag in ["Mage", "Support"]: adaptations.append(("Morellonomicon", "L'équipe ennemie se soigne beaucoup. Indispensable."))
+        elif mon_tag in ["Marksman", "Fighter", "Assassin"]: adaptations.append(("Rappel mortel", "Coupe les soins ennemis (Anti-heal obligatoire)."))
+        else: adaptations.append(("Cotte épineuse", "Pour renvoyer les dégâts et réduire les soins."))
 
-    # 2. Anti-Tank
     if nb_tanks >= 2:
-        if mon_tag_principal == "Mage":
-            conseils.append("🛡️ **Ils ont beaucoup de PV/Armure :** Priorise le <span class='item-highlight'>Tourment de Liandry</span> et le <span class='item-highlight'>Bâton du Vide</span>.")
-        elif mon_tag_principal == "Marksman" or mon_tag_principal == "Assassin":
-            conseils.append("🛡️ **Ils ont beaucoup de Tanks :** Il te faut absolument des <span class='item-highlight'>Salutations de Lord Dominik</span> et potentiellement une <span class='item-highlight'>Lame du Roi Déchu</span>.")
-        elif mon_tag_principal == "Fighter":
-            conseils.append("🛡️ **Bataille de frontlane :** Le <span class='item-highlight'>Couperet Noir</span> sera excellent pour détruire leur armure.")
+        if mon_tag == "Mage": adaptations.append(("Tourment de Liandry", "Fait fondre les tanks basés sur leurs PV max."))
+        elif mon_tag in ["Marksman", "Assassin"]: adaptations.append(("Salutations de Lord Dominik", "Pénètre l'armure massive de la frontline."))
+        elif mon_tag == "Fighter": adaptations.append(("Couperet noir", "Réduit l'armure ennemie à chaque coup."))
 
-    # 3. Survie / Défense
     if nb_assassins >= 2:
-        if mon_tag_principal in ["Mage", "Support"]:
-            conseils.append("🗡️ **Beaucoup de burst en face :** Le <span class='item-highlight'>Sablier de Zhonya</span> est obligatoire pour survivre aux assassins.")
-        else:
-            conseils.append("🗡️ **Beaucoup de burst en face :** L'<span class='item-highlight'>Ange Gardien</span> ou la <span class='item-highlight'>Danse de la Mort</span> te sauveront la mise.")
+        if mon_tag in ["Mage", "Support"]: adaptations.append(("Sablier de Zhonya", "L'actif te sauvera du burst des assassins."))
+        else: adaptations.append(("Ange gardien", "Te donne une seconde vie si tu te fais one-shot."))
             
     if nb_mages >= 2:
-        if mon_tag_principal in ["Tank", "Fighter"]:
-            conseils.append("🔮 **Beaucoup de dégâts magiques :** Ne néglige pas la <span class='item-highlight'>Force de la Nature</span> ou le <span class='item-highlight'>Visage Spirituel</span>.")
-        elif mon_tag_principal == "Marksman":
-            conseils.append("🔮 **Gros dégâts magiques en face :** Pense au <span class='item-highlight'>Cimeterre Mercuriel</span> ou à la <span class='item-highlight'>Gueule de Malmortius</span>.")
+        if mon_tag in ["Tank", "Fighter"]: adaptations.append(("Force de la nature", "La meilleure résistance magique contre le poke AP."))
+        elif mon_tag == "Marksman": adaptations.append(("Gueule de Malmortius", "Un bouclier anti-magie vital contre leur burst."))
 
-    if not conseils:
-        conseils.append("⚖️ **Compo ennemie équilibrée :** Pars sur le build standard de ton champion sur ce patch. Pas besoin de contrer un type de dégât spécifique.")
-
-    return conseils
+    return html_core, adaptations
 
 # --- INITIALISATION ---
-champions_data = get_lol_data()
+champions_data, items_data, version = get_lol_data()
 
 if champions_data:
     st.sidebar.markdown("## ⚔️ NEXUS TACTICS")
-    menu = st.sidebar.radio("Outils Stratégiques", ["1. Matchup 1v1", "2. Assistant de Draft", "3. L'Adaptateur de Build"])
+    menu = st.sidebar.radio("Outils Stratégiques", ["1. Matchup 1v1", "2. Assistant de Draft", "3. Build & Items"])
     st.sidebar.markdown("---")
     
     liste_champs = ["Aucun"] + sorted(list(champions_data.keys()))
 
     # ==========================================
-    # ONGLET 1 : MATCHUP 1V1
+    # ONGLET 1 : MATCHUP 1V1 (Corrigé)
     # ==========================================
     if menu == "1. Matchup 1v1":
         st.markdown("<h1 style='text-align: center;'>Analyse de Matchup</h1>", unsafe_allow_html=True)
@@ -169,37 +183,41 @@ if champions_data:
         st.markdown("---")
         
         c1, c2, c3 = st.columns([2, 1, 2])
+        
+        default_mon = "Kha'Zix" if lane == "Jungle" else "Ahri"
+        default_son = "Amumu" if lane == "Jungle" else "Zed"
+        
         with c1:
-            mon_choix = st.selectbox("Ton Champion", liste_champs[1:], index=liste_champs[1:].index("Ahri") if "Ahri" in liste_champs else 0)
+            mon_choix = st.selectbox("Ton Champion", liste_champs[1:], index=liste_champs[1:].index(default_mon) if default_mon in liste_champs else 0)
             st.image(champions_data[mon_choix]['image_url'], width=100)
             
         with c2:
             st.markdown("<div class='vs-text'>VS</div>", unsafe_allow_html=True)
 
         with c3:
-            son_choix = st.selectbox("Adversaire Direct", liste_champs[1:], index=liste_champs[1:].index("Zed") if "Zed" in liste_champs else 1)
+            son_choix = st.selectbox("Adversaire Direct", liste_champs[1:], index=liste_champs[1:].index(default_son) if default_son in liste_champs else 1)
             st.image(champions_data[son_choix]['image_url'], width=100)
 
         st.markdown("---")
         m1, m2, m3, m4 = st.columns(4)
-        m1.metric("Winrate du Matchup", f"{random.uniform(45.0, 55.0):.1f} %")
-        m2.metric("Difficulté estimée", random.choice(["Facile", "Skill Matchup", "Difficile"]))
+        m1.metric("Winrate", f"{random.uniform(45.0, 55.0):.1f} %")
+        m2.metric("Difficulté", random.choice(["Facile", "Skill Matchup", "Difficile"]))
         m3.metric("Gold Diff @15min", f"{random.choice(['+', '-'])}{random.randint(100, 600)} G")
-        m4.metric("Kills Solo", f"{random.uniform(40.0, 60.0):.1f} %")
+        m4.metric("Avantage (1v1)", f"{random.uniform(40.0, 60.0):.1f} %")
 
         st.markdown("<div class='advice-box'>", unsafe_allow_html=True)
-        st.subheader("🧠 Win Conditions & Gameplan")
-        st.write(f"- Joue autour des cooldowns de {son_choix}.")
-        st.write(f"- En {lane}, la priorité de vague est cruciale avant le niveau 3.")
-        st.write("- Maintiens la vision du côté du jungler ennemi pour éviter les ganks.")
+        st.subheader(f"🧠 Gameplan Spécifique ({lane})")
+        conseils = generer_conseils_lane(mon_choix, son_choix, lane)
+        for c in conseils:
+            st.write("- " + c)
         st.markdown("</div>", unsafe_allow_html=True)
 
     # ==========================================
-    # ONGLET 2 : ASSISTANT DE DRAFT
+    # ONGLET 2 : ASSISTANT DE DRAFT (Méta fixée)
     # ==========================================
     elif menu == "2. Assistant de Draft":
         st.markdown("<h1 style='text-align: center;'>Assistant de Composition</h1>", unsafe_allow_html=True)
-        st.write("L'outil analyse les faiblesses de ton équipe et te suggère les meilleurs picks pour équilibrer la game.")
+        st.write("L'outil analyse les faiblesses de ton équipe et te suggère les meilleurs picks.")
         
         ma_lane = st.selectbox("📍 Dans quelle lane vas-tu jouer ?", ["Toplane", "Jungle", "Midlane", "Botlane (ADC)", "Support"])
         st.markdown("---")
@@ -228,17 +246,12 @@ if champions_data:
             manque_ap, manque_tank, recos = analyser_compo(equipe_alliee, ma_lane, champions_data)
             
             st.subheader("📊 Diagnostic de ta composition :")
-            
             diag_col1, diag_col2 = st.columns(2)
-            if manque_ap:
-                diag_col1.markdown("<span class='warning-text'>⚠️ Manque de dégâts magiques (AP). L'équipe ennemie va stack de l'Armure.</span>", unsafe_allow_html=True)
-            else:
-                diag_col1.success("✅ Dégâts mixtes assurés.")
+            if manque_ap: diag_col1.error("⚠️ Manque de dégâts magiques (AP).")
+            else: diag_col1.success("✅ Dégâts mixtes assurés.")
                 
-            if manque_tank:
-                diag_col2.markdown("<span class='warning-text'>⚠️ Manque d'Engage / Frontline. Les teamfights seront fragiles.</span>", unsafe_allow_html=True)
-            else:
-                diag_col2.success("✅ Bonne présence de Tank/Frontline.")
+            if manque_tank: diag_col2.error("⚠️ Manque d'Engage / Frontline.")
+            else: diag_col2.success("✅ Bonne présence de Tank/Frontline.")
 
             st.markdown(f"### 🎯 Picks Meta Suggérés en {ma_lane}")
             if not recos:
@@ -255,11 +268,11 @@ if champions_data:
                         st.markdown("</div>", unsafe_allow_html=True)
 
     # ==========================================
-    # ONGLET 3 : BUILD DYNAMIQUE (LE NOUVEAU TRUC)
+    # ONGLET 3 : BUILD COMPLET (NOUVEAU DESIGN)
     # ==========================================
-    elif menu == "3. L'Adaptateur de Build":
+    elif menu == "3. Build & Items":
         st.markdown("<h1 style='text-align: center;'>Forgeron Tactique (Builds)</h1>", unsafe_allow_html=True)
-        st.write("Tu ne sais pas quels objets faire dans ta partie ? Renseigne ton champion et l'équipe adverse, on te dit quoi acheter pour les détruire.")
+        st.write("Le guide d'achat complet pour détruire la composition ennemie.")
         
         st.markdown("---")
         c1, c2 = st.columns([1, 2])
@@ -283,14 +296,27 @@ if champions_data:
         st.markdown("---")
         if mon_champ != "Aucun" and any(c != "Aucun" for c in e_team):
             if st.button("🔨 Générer mon Plan de Build"):
-                st.subheader(f"Adaptation de Build pour {mon_champ}")
-                st.markdown("<div class='advice-box'>", unsafe_allow_html=True)
+                html_core, adaptations = generer_build_complet(mon_champ, e_team, champions_data, items_data)
                 
-                conseils_build = generer_build(mon_champ, e_team, champions_data)
-                for conseil in conseils_build:
-                    st.markdown(f"- {conseil}", unsafe_allow_html=True)
-                    
-                st.markdown("</div>", unsafe_allow_html=True)
+                st.subheader(f"1️⃣ Core Build (Standard) pour {mon_champ}")
+                st.write("Les objets de base que tu dois construire dans 90% des parties :")
+                st.markdown(html_core, unsafe_allow_html=True)
+                
+                st.subheader("2️⃣ Objets Situationnels (L'Adaptation parfaite)")
+                if not adaptations:
+                    st.success("La composition ennemie est très basique. Reste sur ton build principal !")
+                else:
+                    for nom_item, raison in adaptations:
+                        img_url = get_item_image(nom_item, items_data)
+                        st.markdown(f"""
+                        <div class="item-box">
+                            <img src="{img_url}">
+                            <div>
+                                <span class="item-highlight">{nom_item}</span><br>
+                                <span style="font-size: 14px;">{raison}</span>
+                            </div>
+                        </div>
+                        """, unsafe_allow_html=True)
         else:
             st.info("Sélectionne ton champion et au moins un ennemi pour générer ton build.")
 
